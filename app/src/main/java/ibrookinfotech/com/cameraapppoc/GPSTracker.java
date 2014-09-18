@@ -14,7 +14,10 @@ import android.provider.Settings;
 import android.util.Log;
 
 public class GPSTracker extends Service implements LocationListener {
+
     private final Context mContext;
+
+    private NewLocationListener mListener;
 
     // flag for GPS status
     boolean isGPSEnabled = false;
@@ -25,10 +28,7 @@ public class GPSTracker extends Service implements LocationListener {
     // flag for GPS status
     boolean canGetLocation = false;
 
-    private Location lastKnownLocation; // lastKnownLocation
-
-    private Location mLocation;
-
+    Location location; // location
     double latitude; // latitude
     double longitude; // longitude
 
@@ -38,17 +38,17 @@ public class GPSTracker extends Service implements LocationListener {
     // The minimum time between updates in milliseconds
     private static final long MIN_TIME_BW_UPDATES = 1000 * 60 * 1; // 1 minute
 
-    private static final int TWO_MINUTES = 1000 * 60 * 2;
-
     // Declaring a Location Manager
     protected LocationManager locationManager;
 
-    public GPSTracker(Context context) {
+    public GPSTracker(Context context, NewLocationListener listener) {
         this.mContext = context;
+        this.mListener=listener;
         getLocation();
     }
 
-    private Location getLastKnownLocation() {
+
+    public Location getLocation() {
         try {
             locationManager = (LocationManager) mContext
                     .getSystemService(LOCATION_SERVICE);
@@ -72,28 +72,28 @@ public class GPSTracker extends Service implements LocationListener {
                             MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
                     Log.d("Network", "Network");
                     if (locationManager != null) {
-                        lastKnownLocation = locationManager
+                        location = locationManager
                                 .getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-                        if (lastKnownLocation != null) {
-                            latitude = lastKnownLocation.getLatitude();
-                            longitude = lastKnownLocation.getLongitude();
+                        if (location != null) {
+                            latitude = location.getLatitude();
+                            longitude = location.getLongitude();
                         }
                     }
                 }
                 // if GPS Enabled get lat/long using GPS Services
                 if (isGPSEnabled) {
-                    if (lastKnownLocation == null) {
+                    if (location == null) {
                         locationManager.requestLocationUpdates(
                                 LocationManager.GPS_PROVIDER,
                                 MIN_TIME_BW_UPDATES,
                                 MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
                         Log.d("GPS Enabled", "GPS Enabled");
                         if (locationManager != null) {
-                            lastKnownLocation = locationManager
+                            location = locationManager
                                     .getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                            if (lastKnownLocation != null) {
-                                latitude = lastKnownLocation.getLatitude();
-                                longitude = lastKnownLocation.getLongitude();
+                            if (location != null) {
+                                latitude = location.getLatitude();
+                                longitude = location.getLongitude();
                             }
                         }
                     }
@@ -104,7 +104,7 @@ public class GPSTracker extends Service implements LocationListener {
             e.printStackTrace();
         }
 
-        return lastKnownLocation;
+        return location;
     }
 
     /**
@@ -121,8 +121,8 @@ public class GPSTracker extends Service implements LocationListener {
      * Function to get latitude
      * */
     public double getLatitude(){
-        if(mLocation != null){
-            latitude = mLocation.getLatitude();
+        if(location != null){
+            latitude = location.getLatitude();
         }
 
         // return latitude
@@ -133,8 +133,8 @@ public class GPSTracker extends Service implements LocationListener {
      * Function to get longitude
      * */
     public double getLongitude(){
-        if(mLocation != null){
-            longitude = mLocation.getLongitude();
+        if(location != null){
+            longitude = location.getLongitude();
         }
 
         // return longitude
@@ -149,84 +149,15 @@ public class GPSTracker extends Service implements LocationListener {
         return this.canGetLocation;
     }
 
-    /** Determines whether one Location reading is better than the current Location fix
-     * @param location  The new Location that you want to evaluate
-     * @param currentBestLocation  The current Location fix, to which you want to compare the new one
-     * @return boolean
-     */
-    private boolean isBetterLocation(Location location, Location currentBestLocation) {
-        if (currentBestLocation == null) {
-            // A new Location is always better than no Location
-            return true;
-        }
-
-        // Check whether the new Location fix is newer or older
-        long timeDelta = location.getTime() - currentBestLocation.getTime();
-        boolean isSignificantlyNewer = timeDelta > TWO_MINUTES;
-        boolean isSignificantlyOlder = timeDelta < -TWO_MINUTES;
-        boolean isNewer = timeDelta > 0;
-
-        // If it's been more than two minutes since the current Location, use the new Location
-        // because the user has likely moved
-        if (isSignificantlyNewer) {
-            return true;
-            // If the new Location is more than two minutes older, it must be worse
-        } else if (isSignificantlyOlder) {
-            return false;
-        }
-
-        // Check whether the new Location fix is more or less accurate
-        int accuracyDelta = (int) (location.getAccuracy() - currentBestLocation.getAccuracy());
-        boolean isLessAccurate = accuracyDelta > 0;
-        boolean isMoreAccurate = accuracyDelta < 0;
-        boolean isSignificantlyLessAccurate = accuracyDelta > 200;
-
-        // Check if the old and new Location are from the same provider
-        boolean isFromSameProvider = isSameProvider(location.getProvider(),
-                currentBestLocation.getProvider());
-
-        // Determine Location quality using a combination of timeliness and accuracy
-        if (isMoreAccurate) {
-            return true;
-        } else if (isNewer && !isLessAccurate) {
-            return true;
-        } else if (isNewer && !isSignificantlyLessAccurate && isFromSameProvider) {
-            return true;
-        }
-        return false;
-    }
-
-    /** Checks whether two providers are the same */
-    private boolean isSameProvider(String provider1, String provider2) {
-        if (provider1 == null) {
-            return provider2 == null;
-        }
-        return provider1.equals(provider2);
-    }
-
-    private Location getLocation(){
-        Boolean isBetterLocation;
-        lastKnownLocation = getLastKnownLocation();
-        isBetterLocation = isBetterLocation(mLocation, lastKnownLocation);
-        if(isBetterLocation){
-            return mLocation;
-        }
-        else{
-            mLocation = lastKnownLocation;
-            return mLocation;
-        }
-    }
-
-
     /**
      * Function to show settings alert dialog
-     * On pressing Settings button will launch Settings Options
+     * On pressing Settings button will lauch Settings Options
      * */
     public void showSettingsAlert(){
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(mContext);
 
         // Setting Dialog Title
-        alertDialog.setTitle("GPS settings");
+        alertDialog.setTitle("GPS is settings");
 
         // Setting Dialog Message
         alertDialog.setMessage("GPS is not enabled. Do you want to go to settings menu?");
@@ -251,29 +182,26 @@ public class GPSTracker extends Service implements LocationListener {
     }
 
     @Override
-    public IBinder onBind(Intent intent) {
-        // TODO: Return the communication channel to the service.
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
-
-    @Override
     public void onLocationChanged(Location location) {
-        this.mLocation = location;
-        getLocation();
+        mListener.onNewLocation(location);
+        canGetLocation = true;
     }
 
     @Override
-    public void onStatusChanged(String s, int i, Bundle bundle) {
-
+    public void onProviderDisabled(String provider) {
     }
 
     @Override
-    public void onProviderEnabled(String s) {
-
+    public void onProviderEnabled(String provider) {
     }
 
     @Override
-    public void onProviderDisabled(String s) {
-
+    public void onStatusChanged(String provider, int status, Bundle extras) {
     }
+
+    @Override
+    public IBinder onBind(Intent arg0) {
+        return null;
+    }
+
 }

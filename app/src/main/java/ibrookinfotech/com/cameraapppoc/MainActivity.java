@@ -30,7 +30,7 @@ import java.util.Date;
 import java.util.Locale;
 
 
-public class MainActivity extends Activity{
+public class MainActivity extends Activity implements NewLocationListener {
 
     // Activity request codes
     private static final int CAMERA_CAPTURE_IMAGE_REQUEST_CODE = 100;
@@ -52,6 +52,16 @@ public class MainActivity extends Activity{
     private TextView locationTextView;
 
     GPSTracker gps;
+
+    @Override
+    public void onNewLocation(Location location) {
+
+        locationTextView.setText("Latitude: " + location.getLatitude() + "Longitude "+ location.getLongitude());
+
+        Toast.makeText(getApplicationContext(), "Your Location is - \nLat: " + location.getLatitude() + "\nLong: " + location.getLongitude(), Toast.LENGTH_LONG).show();
+
+    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,11 +98,13 @@ public class MainActivity extends Activity{
             finish();
         }
 
-        gps = new GPSTracker(this);
+        gps = new GPSTracker(this, this);
         if(gps.canGetLocation()){
 
             double latitude = gps.getLatitude();
             double longitude = gps.getLongitude();
+
+            locationTextView.setText("Latitude: " + latitude + "Longitude "+ longitude);
 
             // \n is for new line
             Toast.makeText(getApplicationContext(), "Your Location is - \nLat: " + latitude + "\nLong: " + longitude, Toast.LENGTH_LONG).show();
@@ -145,6 +157,16 @@ public class MainActivity extends Activity{
         // save file url in bundle as it will be null on scree orientation
         // changes
         outState.putParcelable("file_uri", fileUri);
+    }
+
+    @Override
+    protected void onPause() {
+        if (gps != null) {
+            gps.stopUsingGPS();
+        }
+        Log.d("Camera App", "On Pause Called");
+        super.onPause();
+
     }
 
     @Override
