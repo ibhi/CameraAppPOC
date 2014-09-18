@@ -1,10 +1,16 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:id="@+id/scrollView" >
+
+<LinearLayout
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     android:orientation="vertical"
     android:baselineAligned="false"
     tools:context=".MainActivity" >
+
 
      <!-- Capture picture button -->
     <Button
@@ -29,7 +35,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:visibility="gone" />
+        android:src="@drawable/placeholder"
+         />
 
     <EditText
         android:layout_width="match_parent"
@@ -44,6 +51,19 @@
         android:textAppearance="?android:attr/textAppearanceLarge"
         android:text="Latitude: unknown, Longitude: Unknown"
         android:id="@+id/textViewLocation" />
+    <ProgressBar
+        android:id="@+id/address_progress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:indeterminate="true"
+        android:visibility="gone" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Fetching your current location"
+        android:id="@+id/address" />
 
     <Button
         android:layout_width="100dp"
@@ -57,3 +77,4 @@
 
 
 </LinearLayout>
+</ScrollView>
